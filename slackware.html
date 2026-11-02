@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instalador estilo Slackware</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta VGA de 16 colores */
+    --azul: #0000a8;
+    --cian: #00a8a8;
+    --blanco: #fcfcfc;
+    --amarillo: #fcfc54;
+    --rojo: #a80000;
+    --rojo-claro: #fc5454;
+    --negro: #000000;
+    --gris: #a8a8a8;
+    --verde: #54fc54;
+    --font: "Share Tech Mono", "Lucida Console", "Courier New", monospace;
+    --fs: min(17px, calc((100vw - 32px) / 42));
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--azul);
+    color: var(--blanco);
+    font-family: var(--font);
+    font-size: var(--fs);
+    line-height: 1.15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow-x: hidden;
+    -webkit-font-smoothing: none;
+    user-select: none;
+  }
+  .backtitle {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 2px 1ch;
+    color: var(--cian);
+    font-weight: bold;
+  }
+
+  /* ---------- Caja de diálogo ---------- */
+  .dialog {
+    position: relative;
+    width: 64ch;
+    max-width: 100%;
+    background: var(--cian);
+    color: var(--blanco);
+    border-top: 0.12em solid var(--blanco);
+    border-left: 0.12em solid var(--blanco);
+    border-right: 0.12em solid var(--negro);
+    border-bottom: 0.12em solid var(--negro);
+    outline: 0.5ch solid var(--cian);
+    box-shadow: 2.5ch 1.2em 0 0 var(--negro);
+    margin: 0.6em 0.5ch 1.4em;
+    padding: 0.25em 1ch 0.5em;
+  }
+  .dialog-title {
+    position: absolute;
+    top: -0.62em; left: 0; right: 0;
+    text-align: center;
+  }
+  .dialog-title span {
+    background: var(--cian);
+    color: var(--amarillo);
+    font-weight: bold;
+    padding: 0 1ch;
+  }
+  .prompt { margin: 0.2em 0 0.4em; white-space: pre-wrap; }
+
+  /* ---------- Lista (caja hundida) ---------- */
+  .listbox {
+    position: relative;
+    margin: 0.5em 1ch 0.6em;
+    border-top: 0.12em solid var(--negro);
+    border-left: 0.12em solid var(--negro);
+    border-right: 0.12em solid var(--blanco);
+    border-bottom: 0.12em solid var(--blanco);
+    padding: 0.35em 0 0.35em;
+  }
+  .arrow {
+    position: absolute; left: 3ch;
+    background: var(--cian);
+    color: var(--verde);
+    padding: 0 0.3ch;
+    line-height: 1;
+  }
+  .arrow.up { top: -0.55em; }
+  .arrow.down { bottom: -0.55em; }
+  .arrow.off { color: var(--cian); }
+  .percent {
+    position: absolute; right: 5ch; bottom: -0.55em;
+    background: var(--cian);
+    color: var(--rojo);
+    padding: 0 0.3ch;
+    line-height: 1;
+  }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li {
+    padding-left: 9ch;
+    white-space: pre;
+    cursor: pointer;
+  }
+  li .item {
+    color: var(--amarillo);
+    font-weight: bold;
+  }
+  li .item b { color: var(--rojo); }
+  li .desc { color: var(--negro); }
+  li.sel .item { background: var(--azul); color: var(--blanco); }
+  li.sel .item b { color: var(--blanco); }
+  li.sel .desc { color: var(--blanco); }
+
+  /* ---------- Separador y botones ---------- */
+  .sep {
+    border-top: 0.12em solid var(--blanco);
+    margin: 0.5em -1ch 0.4em;
+  }
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8ch;
+    white-space: pre;
+  }
+  .btn {
+    cursor: pointer;
+    color: var(--negro);
+    padding: 0 0.2ch;
+  }
+  .btn .hk { color: var(--rojo); font-weight: bold; }
+  .btn .br { color: var(--blanco); }
+  .btn.active { background: var(--azul); color: var(--blanco); }
+  .btn.active .hk { color: var(--blanco); text-decoration: underline; }
+  .btn.active .br { color: var(--blanco); }
+
+  /* ---------- Mensaje de confirmación ---------- */
+  .msg { display: none; }
+  .msg.show { display: block; }
+  .msg .dialog { width: 46ch; }
+  .msg .prompt { text-align: center; padding: 0.4em 0; }
+
+  .help {
+    position: fixed; bottom: 4px; left: 0; right: 0;
+    text-align: center;
+    color: var(--gris);
+    font-size: 0.8em;
+  }
+</style>
+</head>
+<body>
+  <div class="backtitle">Slackware 15.0 · Programa de instalación</div>
+
+  <div id="main" class="dialog" role="dialog" aria-labelledby="t1">
+    <div class="dialog-title"><span id="t1">SELECCIÓN DE ZONA HORARIA</span></div>
+    <div class="prompt">Seleccione la zona horaria de su ubicación. Si no
+elige ninguna, se usará 'UTC' (tiempo universal
+coordinado) por defecto. Use las teclas ARRIBA/ABAJO
+y RePág/AvPág para desplazarse por toda la lista.</div>
+
+    <div class="listbox">
+      <span class="arrow up" id="up">↑(-)</span>
+      <ul id="list" role="listbox"></ul>
+      <span class="arrow down" id="down">↓(+)</span>
+      <span class="percent" id="pct">0%</span>
+    </div>
+
+    <div class="sep"></div>
+    <div class="buttons">
+      <span class="btn active" id="ok"><span class="br">&lt;</span>  <span class="hk">O</span>K  <span class="br">&gt;</span></span>
+      <span class="btn" id="cancel"><span class="br">&lt;</span><span class="hk">C</span>ancelar<span class="br">&gt;</span></span>
+    </div>
+  </div>
+
+  <div class="msg" id="msg" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;">
+    <div class="dialog">
+      <div class="dialog-title"><span id="msgTitle">CONFIRMACIÓN</span></div>
+      <div class="prompt" id="msgText"></div>
+      <div class="sep"></div>
+      <div class="buttons"><span class="btn active" id="msgOk"><span class="br">&lt;</span>  <span class="hk">O</span>K  <span class="br">&gt;</span></span></div>
+    </div>
+  </div>
+
+  <div class="help">↑ ↓ RePág AvPág Inicio Fin · Tab cambia de botón · Intro acepta</div>
+
+<script>
+  // Datos de ejemplo
+  const zonas = [
+    "America/Argentina/Buenos_Aires", "America/Asuncion", "America/Bogota",
+    "America/Caracas", "America/Costa_Rica", "America/El_Salvador",
+    "America/Guatemala", "America/Guayaquil", "America/Havana",
+    "America/La_Paz", "America/Lima", "America/Managua",
+    "America/Mexico_City", "America/Montevideo", "America/Panama",
+    "America/Puerto_Rico", "America/Santiago", "America/Santo_Domingo",
+    "America/Tegucigalpa", "Atlantic/Canary", "Europe/Lisbon",
+    "Europe/Madrid", "Europe/Paris", "Europe/Rome", "UTC"
+  ];
+  const VISIBLES = 11;
+  let sel = 4, inicio = 0, boton = 0;
+
+  const list = document.getElementById("list");
+  const up = document.getElementById("up");
+  const down = document.getElementById("down");
+  const pct = document.getElementById("pct");
+  const btns = [document.getElementById("ok"), document.getElementById("cancel")];
+  const msg = document.getElementById("msg");
+  let modal = false;
+
+  function render() {
+    if (sel < inicio) inicio = sel;
+    if (sel >= inicio + VISIBLES) inicio = sel - VISIBLES + 1;
+    list.innerHTML = "";
+    zonas.slice(inicio, inicio + VISIBLES).forEach((z, i) => {
+      const li = document.createElement("li");
+      const idx = inicio + i;
+      if (idx === sel) li.className = "sel";
+      li.innerHTML = `<span class="item"><b>${z[0]}</b>${z.slice(1)}</span>`;
+      li.onclick = () => { sel = idx; render(); };
+      li.ondblclick = () => { sel = idx; aceptar(0); };
+      list.appendChild(li);
+    });
+    up.classList.toggle("off", inicio === 0);
+    down.classList.toggle("off", inicio + VISIBLES >= zonas.length);
+    const p = Math.round(((inicio + VISIBLES) / zonas.length) * 100);
+    pct.textContent = Math.min(p, 100) + "%";
+    btns.forEach((b, i) => b.classList.toggle("active", i === boton));
+  }
+
+  function aceptar(b) {
+    const texto = b === 0
+      ? `Zona horaria seleccionada:\n\n${zonas[sel]}`
+      : "Instalación cancelada.\nSe usará UTC por defecto.";
+    document.getElementById("msgText").textContent = texto;
+    msg.style.display = "flex";
+    modal = true;
+  }
+  function cerrar() { msg.style.display = "none"; modal = false; }
+
+  document.getElementById("msgOk").onclick = cerrar;
+  btns.forEach((b, i) => b.onclick = () => { boton = i; render(); aceptar(i); });
+
+  document.addEventListener("keydown", e => {
+    if (modal) { if (e.key === "Enter" || e.key === "Escape") { cerrar(); e.preventDefault(); } return; }
+    const n = zonas.length;
+    switch (e.key) {
+      case "ArrowUp":   sel = Math.max(0, sel - 1); break;
+      case "ArrowDown": sel = Math.min(n - 1, sel + 1); break;
+      case "PageUp":    sel = Math.max(0, sel - VISIBLES); break;
+      case "PageDown":  sel = Math.min(n - 1, sel + VISIBLES); break;
+      case "Home":      sel = 0; break;
+      case "End":       sel = n - 1; break;
+      case "Tab": case "ArrowLeft": case "ArrowRight": boton = 1 - boton; break;
+      case "Enter":     aceptar(boton); break;
+      case "Escape":    aceptar(1); break;
+      default: {
+        // Tecla rápida: saltar al siguiente elemento que empiece por esa letra
+        const k = e.key.toLowerCase();
+        if (k.length !== 1) return;
+        for (let i = 1; i <= n; i++) {
+          const j = (sel + i) % n;
+          if (zonas[j][0].toLowerCase() === k) { sel = j; break; }
+        }
+      }
+    }
+    e.preventDefault();
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
